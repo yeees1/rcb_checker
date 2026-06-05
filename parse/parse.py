@@ -31,6 +31,7 @@ async def parse_page():
             args=[
                 "--no-sandbox",
                 "--disable-dev-shm-usage",
+                "--disable-gpu",
             ],
         )
 
