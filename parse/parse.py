@@ -9,7 +9,7 @@ from playwright.async_api import async_playwright
 
 from config import load_config
 
-SCREENSHOT_PATH = Path("parse/test-results/screenshot.png")
+SCREENSHOT_PATH = Path("test-results/screenshot.png")
 
 
 def add_time(path: Path):
