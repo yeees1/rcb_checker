@@ -1,13 +1,54 @@
 import asyncio
 from bs4 import BeautifulSoup
-from os import wait
-from time import sleep
-
+from datetime import datetime
+from pathlib import Path
+from PIL import Image, ImageDraw, ImageFont
 
 import aiofiles
 from playwright.async_api import async_playwright
 
 from config import load_config
+
+SCREENSHOT_PATH = Path("parse/test-results/screenshot.png")
+
+
+def add_time(path: Path):
+    created_at = datetime.now().strftime("%d.%m.%Y %H:%M:%S")
+    image = Image.open(path).convert("RGBA")
+    draw = ImageDraw.Draw(image)
+    text = f"скрин сделан: {created_at}"
+    try:
+        font = ImageFont.truetype("DejaVuSans.ttf", 24)
+    except OSError:
+        font = ImageFont.load_default()
+    padding = 16
+    text_box = draw.textbbox((0, 0), text, font=font)
+    text_width = text_box[2] - text_box[0]
+    text_height = text_box[3] - text_box[1]
+    x = padding
+    y = padding
+    background_box = [
+        x - 8,
+        y - 8,
+        x + text_width + 8,
+        y + text_height + 8,
+    ]
+    draw.rectangle(background_box, fill=(0, 0, 0, 180))
+    draw.text((x, y), text, fill=(255, 255, 255, 255), font=font)
+    image.convert("RGB").save(path)
+
+
+async def make_screen(page) -> Path:
+    SCREENSHOT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    if SCREENSHOT_PATH.exists():
+        SCREENSHOT_PATH.unlink()
+    await page.screenshot(
+        path=str(SCREENSHOT_PATH),
+        full_page=True,
+    )
+    add_time(SCREENSHOT_PATH)
+
+    return SCREENSHOT_PATH
 
 
 async def form_table(input_table):
@@ -66,7 +107,7 @@ async def parse_page():
         async with page.expect_navigation(wait_until="domcontentloaded"):
             await page.get_by_role("link", name="Результаты экзаменов").first.click()
 
-        await page.screenshot(path="test-results/screenshot.png")
+        await make_screen(page)
 
 
         await page.locator("[id='ctl00_ContentPlaceHolder1_ResExams'] tr").first.wait_for(state="attached")
